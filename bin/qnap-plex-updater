@@ -1,0 +1,116 @@
+#!/usr/bin/env bash
+
+readonly PROJECT=qnap-plex-updater
+readonly VERSION=0.1.0
+
+set -euo pipefail
+
+usage() {
+    version
+    die """
+Usage: $PROJECT [parameters] <options>...
+$PROJECT is a CLI tool written in BASH aimed at updating Plex Media Server
+on QNAP servers.
+
+PARAMETERS:
+-c, --channel <channel>    Specifies Plex Media Server update channel (public/beta).
+
+OPTIONS:
+-h, --help       Show this help log.
+-V, --verbose    Output debug information.
+-v, --version    Show version info.
+
+Report bugs to https://github.com/barnumbirr/qnap-plex-updater/issues"""
+}
+
+version() {
+    log "$PROJECT $VERSION"
+}
+
+log() {
+    echo >&2 -e "${1-}"
+}
+
+die() {
+  local log=$1
+  log "$log"
+  exit 1
+}
+
+parse_params() {
+    CHANNEL='public'
+
+    while :; do
+        case "${1-}" in
+        -h | --help)
+            usage
+            ;;
+        -v | --version)
+            version
+            ;;
+        -V | --verbose)
+            set -x
+            ;;
+        -c | --channel)
+            CHANNEL="${2-}"
+            shift
+            ;;
+        -?*)
+            die "Unknown option: $1
+See -h/--help for more details"
+            ;;
+        *)
+            break
+            ;;
+        esac
+        shift
+    done
+
+    return 0
+}
+
+main() {
+    if [[ "${CHANNEL,,}" = "public" ]]; then
+        CHANNEL=0
+    elif [[ "${CHANNEL,,}" = "beta" ]]; then
+        CHANNEL=1
+    else
+        die "'channel' can only be one of 'public' or 'beta', exiting..."
+    fi
+
+    PLEX_DIR="$(/sbin/getcfg -f /etc/config/qpkg.conf PlexMediaServer Install_path)"
+
+    PLEX_TOKEN="$(/bin/grep PlexOnlineToken "${PLEX_DIR}"/Library/Plex\ Media\ Server/Preferences.xml \
+                  | sed -e 's/.*PlexOnlineToken=\"//' -e 's/\".*//')"
+
+    LOCAL_PLEX_VERSION="$(/sbin/curl \
+                          --silent \
+                          http://localhost:32400/identity \
+                          | /bin/grep -ioE '([0-9]+.[0-9]+.[0-9]+.[0-9]+-\b[0-9a-f]{9}\b)')"
+
+    REMOTE_PLEX_VERSION="$(/sbin/curl \
+                           --location \
+                           --head \
+                           --write-out '%{url_effective}' \
+                           "https://plex.tv/downloads/latest/5?channel=${CHANNEL}&build=linux-$(uname -m)&distro=qnap&X-Plex-Token=${PLEX_TOKEN}" \
+                           2>/dev/null | /usr/bin/tail -n1 | /bin/grep -ioE '([0-9]+.[0-9]+.[0-9]+.[0-9]+-\b[0-9a-f]{9}\b)' | /bin/uniq)"
+
+    if [ "$LOCAL_PLEX_VERSION" == "$REMOTE_PLEX_VERSION" ]; then
+        die "Latest Plex Media Server version already installed, exiting..."
+    else
+        log "Downloading Plex Media Server ${REMOTE_PLEX_VERSION}..."
+        /sbin/curl \
+        --silent \
+        --location \
+        --output "${PLEX_DIR}"/PlexMediaServer.qpkg \
+        "https://plex.tv/downloads/latest/5?channel=${CHANNEL}&build=linux-$(uname -m)&distro=qnap&X-Plex-Token=${PLEX_TOKEN}"
+        log "Installing and restarting Plex Media Server..."
+        : "$(sh "${PLEX_DIR}"/PlexMediaServer.qpkg > /dev/null 2>&1)" &
+        wait $!
+        rm "${PLEX_DIR}"/PlexMediaServer.qpkg
+        log "Plex Media Server ${REMOTE_PLEX_VERSION} installed successfully!"
+    fi
+}
+
+parse_params "$@"
+main
