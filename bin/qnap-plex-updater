@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 readonly PROJECT=qnap-plex-updater
-readonly VERSION=0.1.0
+readonly VERSION=0.2.0
 
 set -euo pipefail
 
@@ -70,13 +70,17 @@ See -h/--help for more details"
 }
 
 main() {
-    if [[ "${CHANNEL,,}" = "public" ]]; then
+    if [[ "${CHANNEL,,}" == "public" ]]; then
         CHANNEL=0
-    elif [[ "${CHANNEL,,}" = "beta" ]]; then
+    elif [[ "${CHANNEL,,}" == "beta" ]]; then
         CHANNEL=1
     else
         die "'channel' can only be one of 'public' or 'beta', exiting..."
     fi
+
+    AARCH="$(/bin/uname -m)"
+
+    REGEX_PLEX_VERSION='([0-9]+.[0-9]+.[0-9]+.[0-9]+-\b[0-9a-f]{9}\b)'
 
     PLEX_DIR="$(/sbin/getcfg -f /etc/config/qpkg.conf PlexMediaServer Install_path)"
 
@@ -86,29 +90,29 @@ main() {
     LOCAL_PLEX_VERSION="$(/sbin/curl \
                           --silent \
                           http://localhost:32400/identity \
-                          | /bin/grep -ioE '([0-9]+.[0-9]+.[0-9]+.[0-9]+-\b[0-9a-f]{9}\b)')"
+                          | /bin/grep -ioE "${REGEX_PLEX_VERSION}")"
 
     REMOTE_PLEX_VERSION="$(/sbin/curl \
                            --location \
                            --head \
                            --write-out '%{url_effective}' \
-                           "https://plex.tv/downloads/latest/5?channel=${CHANNEL}&build=linux-$(uname -m)&distro=qnap&X-Plex-Token=${PLEX_TOKEN}" \
-                           2>/dev/null | /usr/bin/tail -n1 | /bin/grep -ioE '([0-9]+.[0-9]+.[0-9]+.[0-9]+-\b[0-9a-f]{9}\b)' | /bin/uniq)"
+                           "https://plex.tv/downloads/latest/5?channel=${CHANNEL}&build=linux-${AARCH}&distro=qnap&X-Plex-Token=${PLEX_TOKEN}" \
+                           2>/dev/null | /usr/bin/tail -n1 | /bin/grep -ioE "${REGEX_PLEX_VERSION}" | /bin/uniq)"
 
-    if [ "$LOCAL_PLEX_VERSION" == "$REMOTE_PLEX_VERSION" ]; then
-        die "Latest Plex Media Server version already installed, exiting..."
+    if [[ "$LOCAL_PLEX_VERSION" == "$REMOTE_PLEX_VERSION" ]]; then
+        die "Latest Plex Media Server version (${REMOTE_PLEX_VERSION}-${AARCH}) already installed, exiting..."
     else
-        log "Downloading Plex Media Server ${REMOTE_PLEX_VERSION}..."
+        log "Downloading Plex Media Server ${REMOTE_PLEX_VERSION}-${AARCH}..."
         /sbin/curl \
         --silent \
         --location \
         --output "${PLEX_DIR}"/PlexMediaServer.qpkg \
-        "https://plex.tv/downloads/latest/5?channel=${CHANNEL}&build=linux-$(uname -m)&distro=qnap&X-Plex-Token=${PLEX_TOKEN}"
+        "https://plex.tv/downloads/latest/5?channel=${CHANNEL}&build=linux-${AARCH}&distro=qnap&X-Plex-Token=${PLEX_TOKEN}"
         log "Installing and restarting Plex Media Server..."
         : "$(sh "${PLEX_DIR}"/PlexMediaServer.qpkg > /dev/null 2>&1)" &
         wait $!
         rm "${PLEX_DIR}"/PlexMediaServer.qpkg
-        log "Plex Media Server ${REMOTE_PLEX_VERSION} installed successfully!"
+        log "Plex Media Server ${REMOTE_PLEX_VERSION}-${AARCH} installed successfully!"
     fi
 }
 

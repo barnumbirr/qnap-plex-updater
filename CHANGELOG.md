@@ -14,6 +14,20 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ### Fixes
 ### Security
 
+## [0.2.0] - 03-06-2022
+
+### New
+
+- `AARCH` and `REGEX_PLEX_VERSION` variables
+
+### Changes
+
+- Return `$AARCH` in Plex Media Server version
+
+### Fixes
+
+- Fix `[[ ]]` string comparisons
+
 ## [0.1.0] - 31-05-2022
 
 Initial release.
