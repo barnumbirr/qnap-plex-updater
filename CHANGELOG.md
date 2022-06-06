@@ -14,6 +14,12 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ### Fixes
 ### Security
 
+## [0.3.0] - 06-06-2022
+
+### New
+
+- Specify package download directory using `-d/--directory <path>`
+
 ## [0.2.0] - 03-06-2022
 
 ### New

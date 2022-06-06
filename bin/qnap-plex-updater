@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 readonly PROJECT=qnap-plex-updater
-readonly VERSION=0.2.0
+readonly VERSION=0.3.0
 
 set -euo pipefail
 
@@ -14,6 +14,7 @@ on QNAP servers.
 
 PARAMETERS:
 -c, --channel <channel>    Specifies Plex Media Server update channel (public/beta).
+-d, --directory <path>     Specifies download directory.
 
 OPTIONS:
 -h, --help       Show this help log.
@@ -39,6 +40,7 @@ die() {
 
 parse_params() {
     CHANNEL='public'
+    DOWNLOAD_DIR=''
 
     while :; do
         case "${1-}" in
@@ -53,6 +55,10 @@ parse_params() {
             ;;
         -c | --channel)
             CHANNEL="${2-}"
+            shift
+            ;;
+        -d | --directory)
+            DOWNLOAD_DIR="${2-}"
             shift
             ;;
         -?*)
@@ -78,6 +84,10 @@ main() {
         die "'channel' can only be one of 'public' or 'beta', exiting..."
     fi
 
+    if [[ -z "${DOWNLOAD_DIR}" ]]; then
+        DOWNLOAD_DIR="$(/sbin/getcfg -f /etc/config/def_share.info SHARE_DEF defVolMP)"
+    fi
+
     AARCH="$(/bin/uname -m)"
 
     REGEX_PLEX_VERSION='([0-9]+.[0-9]+.[0-9]+.[0-9]+-\b[0-9a-f]{9}\b)'
@@ -101,6 +111,8 @@ main() {
 
     if [[ "$LOCAL_PLEX_VERSION" == "$REMOTE_PLEX_VERSION" ]]; then
         die "Latest Plex Media Server version (${REMOTE_PLEX_VERSION}-${AARCH}) already installed, exiting..."
+    elif [[ "$(df -Pm "$DOWNLOAD_DIR" | awk 'NR==2 {print $4}')" -lt 150 ]]; then
+        die "Not enough free space in $DOWNLOAD_DIR, exiting..."
     else
         log "Downloading Plex Media Server ${REMOTE_PLEX_VERSION}-${AARCH}..."
         /sbin/curl \
