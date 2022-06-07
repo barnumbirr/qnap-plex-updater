@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 readonly PROJECT=qnap-plex-updater
-readonly VERSION=0.3.0
+readonly VERSION=0.3.1
 
 set -euo pipefail
 
@@ -120,6 +120,7 @@ main() {
         --location \
         --output "${PLEX_DIR}"/PlexMediaServer.qpkg \
         "https://plex.tv/downloads/latest/5?channel=${CHANNEL}&build=linux-${AARCH}&distro=qnap&X-Plex-Token=${PLEX_TOKEN}"
+        "${PLEX_DIR}"/plex.sh stop
         log "Installing and restarting Plex Media Server..."
         : "$(sh "${PLEX_DIR}"/PlexMediaServer.qpkg > /dev/null 2>&1)" &
         wait $!
