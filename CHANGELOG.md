@@ -8,17 +8,22 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ## [Unreleased]
 
 ### New
-
-- Add 'Prerequisites' section to `README`
-
 ### Changes
 ### Deprecated
 ### Removed
 ### Fixes
-
-- Fix path in `README` usage instructions
-
 ### Security
+
+## [0.3.2] - 24/06/2022
+
+### New
+
+- Add 'Prerequisites' section to `README`
+
+### Fixes
+
+- Fix path in `README` usage instructions (Closes: #2)
+- Replace BASH parameter expansion with good ol' trusty `awk` (Closes: #1)
 
 ## [0.3.1] - 07-06-2022
 

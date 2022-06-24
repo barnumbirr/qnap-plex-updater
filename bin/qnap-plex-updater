@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 readonly PROJECT=qnap-plex-updater
-readonly VERSION=0.3.1
+readonly VERSION=0.3.2
 
 set -euo pipefail
 
@@ -54,7 +54,7 @@ parse_params() {
             set -x
             ;;
         -c | --channel)
-            CHANNEL="${2-}"
+            CHANNEL="$(echo "${2-}" | awk '{print tolower($0)}')"
             shift
             ;;
         -d | --directory)
@@ -76,9 +76,9 @@ See -h/--help for more details"
 }
 
 main() {
-    if [[ "${CHANNEL,,}" == "public" ]]; then
+    if [[ "${CHANNEL}" == "public" ]]; then
         CHANNEL=0
-    elif [[ "${CHANNEL,,}" == "beta" ]]; then
+    elif [[ "${CHANNEL}" == "beta" ]]; then
         CHANNEL=1
     else
         die "'channel' can only be one of 'public' or 'beta', exiting..."
