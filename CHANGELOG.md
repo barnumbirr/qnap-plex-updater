@@ -8,10 +8,16 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ## [Unreleased]
 
 ### New
+
+- Add 'Prerequisites' section to `README`
+
 ### Changes
 ### Deprecated
 ### Removed
 ### Fixes
+
+- Fix path in `README` usage instructions
+
 ### Security
 
 ## [0.3.1] - 07-06-2022

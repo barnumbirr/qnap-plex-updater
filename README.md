@@ -2,6 +2,12 @@
 
 Shell script aimed at updating Plex Media Server on QNAP servers.
 
+## Prerequisites:
+
+- Entware [installed on your device](https://github.com/Entware/entware/wiki/Install-on-QNAP-NAS)
+- `git` installed
+
+
 ## Installation
 
 Clone the repository:
@@ -18,7 +24,7 @@ $ chmod +x bin/qnap-plex-updater
 ### Manual
 
 ```bash
-[~] # /opt/qnap-plex-updater --channel public
+[~] # /opt/qnap-plex-updater/bin/qnap-plex-update --channel public
 Downloading Plex Media Server 1.26.2.5797-5bd057d2b-x86_64...
 Installing and restarting Plex Media Server...
 Plex Media Server 1.26.2.5797-5bd057d2b-x86_64 installed successfully!
