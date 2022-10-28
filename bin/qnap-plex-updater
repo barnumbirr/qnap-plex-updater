@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 readonly PROJECT=qnap-plex-updater
-readonly VERSION=0.3.2
+readonly VERSION=1.0.0
 
 set -euo pipefail
 
@@ -18,8 +18,9 @@ PARAMETERS:
 
 OPTIONS:
 -h, --help       Show this help log.
+-n, --notify     Output QTS/QuTS notice board notification on successful install.
 -V, --verbose    Output debug information.
--v, --version    Show version info.
+-v, --version    Show version information.
 
 Report bugs to https://github.com/barnumbirr/qnap-plex-updater/issues"""
 }
@@ -41,6 +42,7 @@ die() {
 parse_params() {
     CHANNEL='public'
     DOWNLOAD_DIR=''
+    NOTIFY=0
 
     while :; do
         case "${1-}" in
@@ -49,6 +51,7 @@ parse_params() {
             ;;
         -v | --version)
             version
+            exit 1
             ;;
         -V | --verbose)
             set -x
@@ -60,6 +63,9 @@ parse_params() {
         -d | --directory)
             DOWNLOAD_DIR="${2-}"
             shift
+            ;;
+        -n | --notify)
+            NOTIFY=1
             ;;
         -?*)
             die "Unknown option: $1
@@ -75,7 +81,33 @@ See -h/--help for more details"
     return 0
 }
 
+parse_config_file() {
+    local file=$1
+    local object=$2
+    local key=$3
+    /sbin/getcfg -f "${file}" "${object}" "${key}"
+}
+
 main() {
+    AARCH="$(/bin/uname -m)"
+    QPKG_NAME="PlexMediaServer"
+    QPKG_CONF="/etc/config/qpkg.conf"
+    REGEX_PLEX_VERSION='([0-9]+.[0-9]+.[0-9]+.[0-9]+-\b[0-9a-f]{9}\b)'
+    PLEX_DIR="$(parse_config_file $QPKG_CONF $QPKG_NAME Install_path)"
+    PLEX_INIT_SCRIPT="$(parse_config_file $QPKG_CONF $QPKG_NAME Shell)"
+    PLEX_TOKEN="$(/bin/grep PlexOnlineToken "${PLEX_DIR}"/Library/Plex\ Media\ Server/Preferences.xml \
+                  | sed -e 's/.*PlexOnlineToken=\"//' -e 's/\".*//')"
+    LOCAL_PLEX_VERSION="$(/sbin/curl \
+                          --silent \
+                          http://localhost:32400/identity \
+                          | /bin/grep -ioE "${REGEX_PLEX_VERSION}")"
+    REMOTE_PLEX_VERSION="$(/sbin/curl \
+                           --location \
+                           --head \
+                           --write-out '%{url_effective}' \
+                           "https://plex.tv/downloads/latest/5?channel=${CHANNEL}&build=linux-${AARCH}&distro=qnap&X-Plex-Token=${PLEX_TOKEN}" \
+                           2>/dev/null | /usr/bin/tail -n1 | /bin/grep -ioE "${REGEX_PLEX_VERSION}" | /bin/uniq)"
+
     if [[ "${CHANNEL}" == "public" ]]; then
         CHANNEL=0
     elif [[ "${CHANNEL}" == "beta" ]]; then
@@ -84,48 +116,35 @@ main() {
         die "'channel' can only be one of 'public' or 'beta', exiting..."
     fi
 
-    if [[ -z "${DOWNLOAD_DIR}" ]]; then
-        DOWNLOAD_DIR="$(/sbin/getcfg -f /etc/config/def_share.info SHARE_DEF defVolMP)"
-    fi
-
-    AARCH="$(/bin/uname -m)"
-
-    REGEX_PLEX_VERSION='([0-9]+.[0-9]+.[0-9]+.[0-9]+-\b[0-9a-f]{9}\b)'
-
-    PLEX_DIR="$(/sbin/getcfg -f /etc/config/qpkg.conf PlexMediaServer Install_path)"
-
-    PLEX_TOKEN="$(/bin/grep PlexOnlineToken "${PLEX_DIR}"/Library/Plex\ Media\ Server/Preferences.xml \
-                  | sed -e 's/.*PlexOnlineToken=\"//' -e 's/\".*//')"
-
-    LOCAL_PLEX_VERSION="$(/sbin/curl \
-                          --silent \
-                          http://localhost:32400/identity \
-                          | /bin/grep -ioE "${REGEX_PLEX_VERSION}")"
-
-    REMOTE_PLEX_VERSION="$(/sbin/curl \
-                           --location \
-                           --head \
-                           --write-out '%{url_effective}' \
-                           "https://plex.tv/downloads/latest/5?channel=${CHANNEL}&build=linux-${AARCH}&distro=qnap&X-Plex-Token=${PLEX_TOKEN}" \
-                           2>/dev/null | /usr/bin/tail -n1 | /bin/grep -ioE "${REGEX_PLEX_VERSION}" | /bin/uniq)"
-
     if [[ "$LOCAL_PLEX_VERSION" == "$REMOTE_PLEX_VERSION" ]]; then
         die "Latest Plex Media Server version (${REMOTE_PLEX_VERSION}-${AARCH}) already installed, exiting..."
+    fi
+
+    if [[ -z "${DOWNLOAD_DIR}" ]]; then
+        DOWNLOAD_DIR="$(parse_config_file /etc/config/def_share.info SHARE_DEF defVolMP)"
     elif [[ "$(df -Pm "$DOWNLOAD_DIR" | awk 'NR==2 {print $4}')" -lt 150 ]]; then
         die "Not enough free space in $DOWNLOAD_DIR, exiting..."
-    else
-        log "Downloading Plex Media Server ${REMOTE_PLEX_VERSION}-${AARCH}..."
-        /sbin/curl \
-        --silent \
-        --location \
-        --output "${PLEX_DIR}"/PlexMediaServer.qpkg \
-        "https://plex.tv/downloads/latest/5?channel=${CHANNEL}&build=linux-${AARCH}&distro=qnap&X-Plex-Token=${PLEX_TOKEN}"
-        "${PLEX_DIR}"/plex.sh stop
-        log "Installing and restarting Plex Media Server..."
-        : "$(sh "${PLEX_DIR}"/PlexMediaServer.qpkg > /dev/null 2>&1)" &
-        wait $!
-        rm "${PLEX_DIR}"/PlexMediaServer.qpkg
-        log "Plex Media Server ${REMOTE_PLEX_VERSION}-${AARCH} installed successfully!"
+    fi
+
+    log "Downloading Plex Media Server ${REMOTE_PLEX_VERSION}-${AARCH}..."
+
+    /sbin/curl \
+    --silent \
+    --location \
+    --output "${DOWNLOAD_DIR}"/"${QPKG_NAME}".qpkg \
+    "https://plex.tv/downloads/latest/5?channel=${CHANNEL}&build=linux-${AARCH}&distro=qnap&X-Plex-Token=${PLEX_TOKEN}"
+
+    "${PLEX_INIT_SCRIPT}" stop
+
+    log "Installing and restarting Plex Media Server..."
+    : "$(sh "${DOWNLOAD_DIR}"/"${QPKG_NAME}".qpkg > /dev/null 2>&1)" &
+    wait $!
+
+    rm "${DOWNLOAD_DIR}"/"${QPKG_NAME}".qpkg
+    log "Plex Media Server ${REMOTE_PLEX_VERSION}-${AARCH} installed successfully!"
+
+    if [[ ${NOTIFY} -eq 1 ]]; then
+        /sbin/notice_log_tool -a "Plex Media Server ${REMOTE_PLEX_VERSION}-${AARCH} installed." --severity=5
     fi
 }
 
