@@ -116,7 +116,9 @@ main() {
         die "'channel' can only be one of 'public' or 'beta', exiting..."
     fi
 
-    if [[ "$LOCAL_PLEX_VERSION" == "$REMOTE_PLEX_VERSION" ]]; then
+    # If PMS is not installed or simply not running, just fetch and install the latest version available.
+    # Do nothing and exit if latest version is already installed.
+    if [[ "${LOCAL_PLEX_VERSION-0.0.0}" == "${REMOTE_PLEX_VERSION}" ]]; then
         die "Latest Plex Media Server version (${REMOTE_PLEX_VERSION}-${AARCH}) already installed, exiting..."
     fi
 
