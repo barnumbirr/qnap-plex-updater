@@ -14,6 +14,16 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ### Fixes
 ### Security
 
+## [1.0.0] - 30/10/2022
+
+### New
+
+- use `-n / --notify` to output QTS/QuTS notice board notification on successful install
+
+### Fixes
+
+- set default value for `${LOCAL_PLEX_VERSION}`
+
 ## [0.3.2] - 24/06/2022
 
 ### New

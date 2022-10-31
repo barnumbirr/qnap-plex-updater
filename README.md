@@ -24,7 +24,7 @@ $ chmod +x bin/qnap-plex-updater
 ### Manual
 
 ```bash
-[~] # /opt/qnap-plex-updater/bin/qnap-plex-update --channel public
+[~] # /opt/qnap-plex-updater/bin/qnap-plex-update --channel public --notify
 Downloading Plex Media Server 1.26.2.5797-5bd057d2b-x86_64...
 Installing and restarting Plex Media Server...
 Plex Media Server 1.26.2.5797-5bd057d2b-x86_64 installed successfully!
@@ -34,7 +34,7 @@ Plex Media Server 1.26.2.5797-5bd057d2b-x86_64 installed successfully!
 ### Cron job schedule
 
 ```bash
-$ echo "30 1 * * * /opt/qnap-plex-updater/bin/qnap-plex-updater --channel public > /dev/null 2>&1" >> /etc/config/crontab
+$ echo "0 */6 * * * /opt/qnap-plex-updater/bin/qnap-plex-updater --channel public --notify > /dev/null 2>&1" >> /etc/config/crontab
 $ crontab /etc/config/crontab && /etc/init.d/crond.sh restart
 ```
 
