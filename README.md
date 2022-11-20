@@ -24,7 +24,7 @@ $ chmod +x bin/qnap-plex-updater
 ### Manual
 
 ```bash
-[~] # /opt/qnap-plex-updater/bin/qnap-plex-update --channel public --notify
+[~] # /opt/qnap-plex-updater/bin/qnap-plex-updater --channel public --notify
 Downloading Plex Media Server 1.26.2.5797-5bd057d2b-x86_64...
 Installing and restarting Plex Media Server...
 Plex Media Server 1.26.2.5797-5bd057d2b-x86_64 installed successfully!
