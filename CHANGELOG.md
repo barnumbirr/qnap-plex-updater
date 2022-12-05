@@ -14,7 +14,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ### Fixes
 ### Security
 
-## [1.0.0] - 30/10/2022
+## [1.0.0] - 30-10-2022
 
 ### New
 
@@ -24,7 +24,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 - set default value for `${LOCAL_PLEX_VERSION}`
 
-## [0.3.2] - 24/06/2022
+## [0.3.2] - 24-06-2022
 
 ### New
 
