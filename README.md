@@ -26,6 +26,7 @@ $ chmod +x bin/qnap-plex-updater
 ```bash
 [~] # /opt/qnap-plex-updater/bin/qnap-plex-updater --channel public --notify
 Downloading Plex Media Server 1.26.2.5797-5bd057d2b-x86_64...
+Plex Media Server hasn't been enabled or started...
 Installing and restarting Plex Media Server...
 Plex Media Server 1.26.2.5797-5bd057d2b-x86_64 installed successfully!
 [~] #
@@ -41,7 +42,7 @@ $ crontab /etc/config/crontab && /etc/init.d/crond.sh restart
 ## License:
 
 ```
-Copyright 2022 Martin Simon
+Copyright 2022-2023 Martin Simon
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
